@@ -37,6 +37,10 @@ it ships. Code and its log line ride in the same commit (`scripts/check-docs.sh`
   and a navigation off the allowlist never reaches `Page.navigate`. Run with `npm run verify:policy`;
   kept out of `npm test` so the suite stays runnable with no browser.
 
+- DOCS — README and the architecture/pattern/infrastructure notes now name the URL policy, the
+  `origins.js` module, and `npm run verify:policy`, so the advertised boundary and the implemented one
+  are the same thing.
+
 - FIX — **the manifest asked for `<all_urls>` host permissions it does not need.** `chrome.debugger`
   requires only the `debugger` permission, and nothing here uses `chrome.scripting`, so
   `host_permissions: ["http://*/*", "https://*/*"]` bought nothing while widening the install warning

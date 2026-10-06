@@ -69,7 +69,8 @@ No build step, no bundler, no dependencies. Plain ES modules that Chrome and Nod
 which is what lets the whole decision layer be tested without a browser installed.
 
 ```
-npm test                              # the unit suite (node --test)
+npm test                              # the unit suite (node --test), no browser needed
+npm run verify:policy                 # the URL policy, proven against the real executor
 npm run lint                          # node --check on each entry point
 node tools/check-arch-boundary.mjs    # the dependency-direction gate
 npm run icons                         # regenerate extension/icons/*.png
@@ -82,6 +83,7 @@ npm run icons                         # regenerate extension/icons/*.png
 | `extension/src/shared/protocol.js` | Domain | The wire contract, as constants. Every wire literal lives here, once. |
 | `extension/src/shared/keymap.js` | Domain | Named keys → virtual key codes. Pure data. |
 | `extension/src/shared/snapshot.js` | Domain | Page → numbered `@eN` references the agent acts on. |
+| `extension/src/shared/origins.js` | Domain | Which pages this controller will act on, and why a refusal names its URL. |
 | `extension/src/shared/actions.js` | Use case | The action planner: an action becomes a list of protocol steps. |
 | `extension/src/controller.js` | Use case | The connection state machine: register → upgrade → answer → reconnect. |
 | `extension/src/executor.js` | Adapter | Runs a plan against a tab. **The only module that touches `chrome.*`.** |
@@ -101,6 +103,11 @@ line — useful for proving the wire contract without loading the extension:
 ```
 node tools/pair.mjs --server http://127.0.0.1:8642 --key "$API_SERVER_KEY" --session <session-id>
 ```
+
+`tools/verify-policy.mjs` (`npm run verify:policy`) is the layer in between: it drives the real
+`ChromeExecutor` against a fake `chrome.*` and asserts that a refused target issues **zero**
+`chrome.debugger` calls. The unit suite proves the planner refuses; only this proves the refusal
+stopped the browser call rather than failing after it — fail-closed versus fail-late.
 
 ## Governance
 
