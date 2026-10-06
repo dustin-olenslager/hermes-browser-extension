@@ -1,0 +1,45 @@
+# The factory's phase table — the phase NAMES, ARTIFACTS and GATES as data.
+#
+# Seven phases, in order. Each row is one phase: its id, its name, what must exist for the phase
+# to be finished, and the gate that proves it. `factory-detect.sh` reads this file for the labels and
+# the artifact/gate columns.
+#
+# WHAT IS DATA HERE, AND WHAT IS NOT — stated honestly, because an earlier version of this header
+# claimed more than was true:
+#
+#   DATA (this file):   the phase ids, slugs, names, required artifacts, and the gate for each.
+#   CODE (the detector): the DECISION RULE — which observations map to which phase, and the
+#                        precedence when several could apply. That lives in `factory-detect.sh` as
+#                        explicit branches, not here.
+#
+# So the ordering is data, and the logic that CHOOSES a row is code. Changing a name, an artifact or a
+# gate is a one-line edit here. Adding a new PHASE (a hotfix track, say) means editing the detector's
+# control flow — it is not a row you can append. This header previously said "the detector never
+# hard-codes the sequence", which was false and is the kind of claim this kit exists to refuse: a
+# stated guarantee the code does not provide.
+#
+# Making the decision rule genuinely data-driven is a real change (it is the one-way door noted in the
+# M6 analysis) and is NOT done. Until then, this file describes; the detector decides.
+#
+# Why a data file at all: the phase labels and their artifacts are greppable and diffable without
+# executing anything, and a repo can be asked "what phase is this?" without reading the script.
+#
+# Columns (tab-separated, `#` comments and blank lines ignored):
+#   id       phase number, 0-6
+#   slug     stable machine name, used in reports and by later rungs
+#   name     human name for the report
+#   artifact the thing that must exist for the phase to be satisfied (checked by the detector)
+#   gate     the script that proves it, or `-` when no gate exists yet (a gap, stated not hidden)
+#
+# Phase 0 exists because a repo whose kit is absent or stale cannot have its phase history trusted:
+# the doctor's exit code is the authority, and everything downstream of ADOPT is a guess until it
+# is on the current kit.
+#
+#id	slug	name	artifact	gate
+0	adopt-audit	Adopt / Audit	current kit (doctor exit 0)	scripts/panoply.sh
+1	spec	Spec	spec.md	scripts/check-spec.sh
+2	wireframe	Wireframe	wireframe/index.html + interviews.md	-
+3	plan	Plan	plan.md with a Next step	scripts/check-plan-home.sh
+4	build	Build	open milestones, a branch off base	-
+5	verify	Verify	a fresh green verify on the branch	-
+6	ship	Ship	merged, folder in completed/	scripts/check-launch.sh

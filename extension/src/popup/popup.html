@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hermes Browser Control</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Hermes Browser Control</h1>
+      <p id="status" class="status status--idle">Checking…</p>
+    </header>
+
+    <form id="config">
+      <label>
+        Hermes server
+        <input id="serverUrl" name="serverUrl" type="text" placeholder="http://hermes:8642" autocomplete="off" spellcheck="false" />
+      </label>
+      <label>
+        API access key
+        <input id="accessKey" name="accessKey" type="password" placeholder="set once, stored locally" autocomplete="off" spellcheck="false" />
+      </label>
+      <label>
+        Session id
+        <input id="sessionId" name="sessionId" type="text" placeholder="20260101_000000_abcdef" autocomplete="off" spellcheck="false" />
+      </label>
+      <label>
+        Controller id
+        <input id="controllerId" name="controllerId" type="text" placeholder="chrome-ext-…" autocomplete="off" spellcheck="false" />
+      </label>
+      <label>
+        Limit to these sites <span class="optional">optional</span>
+        <input id="allowedOrigins" name="allowedOrigins" type="text" placeholder="blank = any normal web page" autocomplete="off" spellcheck="false" />
+      </label>
+
+      <div class="actions">
+        <button id="connect" type="submit" class="primary">Connect</button>
+        <button id="disconnect" type="button">Disconnect</button>
+      </div>
+    </form>
+
+    <p id="detail" class="detail"></p>
+
+    <details>
+      <summary>What this can do</summary>
+      <p>
+        Hermes drives this browser's active tab: navigate, read the page, click, type, press keys,
+        scroll, go back, list tabs, and take screenshots. It cannot run arbitrary JavaScript, read
+        your cookies, or touch passwords. It will not act on browser-internal pages or local files,
+        and "Limit to these sites" narrows it further — leave that blank to allow any normal web
+        page. Disconnect at any time — the agent's browser tools then fall back to their configured
+        backend.
+      </p>
+    </details>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

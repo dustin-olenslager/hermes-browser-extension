@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wireframe — Hermes Browser Control popup</title>
+<style>
+  /* Framework-free and self-contained: no CDN, no build step, opens by double-clicking.
+     Styling is deliberately plain — grey boxes, no brand colour, no imagery, no motion.
+     A wireframe that looks finished stops being a wireframe. */
+  body { margin: 0; padding: 24px; font: 14px/1.45 system-ui, sans-serif; color: #1a1a1a; background: #fff; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  .popup { width: 340px; border: 1px solid #c8ccd2; border-radius: 10px; padding: 14px; }
+  .ph { height: 10px; border-radius: 3px; background: #eceef1; }
+  .ph.sm { height: 8px; }
+  .row { display: flex; gap: 12px; padding: 14px 18px; align-items: center; border-bottom: 1px solid #eceef1; }
+  .box { width: 17px; height: 17px; border: 1px solid #c8ccd2; border-radius: 4px; flex: none; }
+  .lbl { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; margin: 10px 0 4px; }
+  .field { height: 30px; border: 1px solid #c8ccd2; border-radius: 7px; background: #fafbfc; }
+  .btnrow { display: flex; gap: 8px; margin-top: 12px; }
+  .btn { flex: 1; height: 32px; border: 1px solid #c8ccd2; border-radius: 7px; display: grid; place-items: center; font-size: 12px; color: #374151; }
+  .btn.pri { background: #e8ecf6; border-color: #b9c2d8; }
+  .status { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #6b7280; margin: 0 0 10px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #6b7280; flex: none; }
+  .detail { margin-top: 10px; font-size: 11px; color: #6b7280; min-height: 1em; }
+  .sep { margin-top: 12px; border-top: 1px solid #eceef1; padding-top: 10px; font-size: 11px; color: #6b7280; }
+  .notes { margin: 22px auto 0; padding: 14px 18px; border: 1px dashed #c8ccd2; border-radius: 8px; }
+  .notes h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }
+  .states { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 8px; }
+  .states > div { flex: 1 1 200px; border: 1px solid #eceef1; border-radius: 8px; padding: 12px; }
+  .states h3 { margin: 0 0 6px; font-size: 12px; }
+  table { border-collapse: collapse; margin-top: 8px; font-size: 12px; width: 100%; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #eceef1; vertical-align: top; }
+  th { color: #6b7280; font-weight: 600; }
+  code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1 style="font-size:15px;margin:0 0 4px">Hermes Browser Control — extension popup</h1>
+  <p style="margin:0 0 18px;color:#6b7280;font-size:12px">Serves US-1 (pair once and drive), US-2 (the channel carries only named actions), US-3 (refuse rather than guess), US-5 (recover without the operator).</p>
+
+  <div class="popup">
+    <div style="font-size:14px;font-weight:600;margin-bottom:2px">Hermes Browser Control</div>
+    <div class="status"><span class="dot"></span><span class="ph sm" style="width:120px"></span></div>
+
+    <div class="lbl">Hermes server</div>
+    <div class="field"></div>
+    <div class="lbl">API access key</div>
+    <div class="field"></div>
+    <div class="lbl">Session id</div>
+    <div class="field"></div>
+    <div class="lbl">Controller id</div>
+    <div class="field"></div>
+
+    <div class="btnrow"><div class="btn pri">Connect</div><div class="btn">Disconnect</div></div>
+
+    <div class="detail">last error, in plain language</div>
+
+    <div class="sep"><strong>What this can do</strong> — the capability sentence, and the disconnect promise</div>
+  </div>
+
+  <div class="notes">
+    <h2>Annotations — the parts a wireframe must state</h2>
+    <ul>
+      <li><strong>Purpose:</strong> settle the pairing screen — what the operator types, what he must be able to see, and what must be impossible to do by accident.</li>
+      <li><strong>Screen:</strong> the extension popup, 340px wide. One screen, no navigation, no second page.</li>
+      <li><strong>State shown:</strong> the four states are drawn below rather than one, because the state IS the screen — the operator's only question is "is it connected, and if not, why".</li>
+      <li><strong>Deliberately absent:</strong> real copy, brand colour, imagery, motion — and, by decision, an options page, a per-site allowlist <em>editor</em> (the list is one text field in this same popup, not a screen), and a log view (see the plan's deletion candidates).</li>
+      <li><strong>Not wired:</strong> nothing is clickable. The interactions are listed, not built.</li>
+      <li><strong>Interactions to design against:</strong> the reviewer should judge the four states and the refusal text, not the styling.</li>
+    </ul>
+  </div>
+
+  <div class="notes">
+    <h2>The four states — this is the screen's real content</h2>
+    <div class="states">
+      <div><h3>Idle / never paired</h3><div class="status"><span class="dot"></span>Not connected</div><p style="font-size:12px;margin:0">Connect is the only enabled action. Nothing else in the popup claims a capability.</p></div>
+      <div><h3>Connecting</h3><div class="status"><span class="dot"></span>Connecting to &lt;server&gt;…</div><p style="font-size:12px;margin:0">The button is disabled so a second click cannot open a second socket.</p></div>
+      <div><h3>Connected</h3><div class="status"><span class="dot" style="background:#cfe3d4"></span>Connected — this browser is the agent's controller</div><p style="font-size:12px;margin:0">Names the session it serves. Disconnect is enabled; Connect is not.</p></div>
+      <div><h3>Fatal (bad key / bad session)</h3><div class="status"><span class="dot" style="background:#f0d3d0"></span>Rejected — check the access key</div><p style="font-size:12px;margin:0">Stops retrying and says so. This is the state that must never look like <em>Connecting</em>: a silent retry loop is indistinguishable from a working socket (US-5).</p></div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <h2>Decisions the reviewer should be able to check against the code</h2>
+    <table>
+      <tr><th>Wireframe decision</th><th>Where it lives</th></tr>
+      <tr><td>Four visible states, with a fatal state distinct from retrying</td><td><code>extension/src/controller.js</code> (<code>STATE</code>), rendered by <code>extension/src/popup/popup.js</code></td></tr>
+      <tr><td>The access key field is a password input and is never echoed back after save</td><td><code>extension/src/popup/popup.html</code>, <code>popup.js</code></td></tr>
+      <tr><td>Connect is disabled while connecting, so one click cannot open two sockets</td><td><code>popup.js</code></td></tr>
+      <tr><td>The capability sentence is on the screen, not only in the README</td><td><code>popup.html</code> → "What this can do"</td></tr>
+      <tr><td>No options page, no log view</td><td>the plan's deletion candidates — absence is the decision</td></tr>
+      <tr><td>"Limit to these sites" is one optional field, blank meaning any normal web page</td><td><code>extension/src/popup/popup.html</code> → <code>allowedOrigins</code>; the policy itself is <code>extension/src/shared/origins.js</code></td></tr>
+      <tr><td>A refusal names the URL, so the agent can report something actionable</td><td><code>extension/src/shared/origins.js</code> (<code>checkUrl</code>), raised by <code>shared/actions.js</code></td></tr>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>

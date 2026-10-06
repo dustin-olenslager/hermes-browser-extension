@@ -1,0 +1,17 @@
+{
+  "name": "hermes-browser-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lets a Hermes Agent drive the Chrome you are already signed into, over an authenticated capability-limited channel.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "verify:policy": "node tools/verify-policy.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "icons": "python3 tools/make-icons.py",
+    "lint": "node --check extension/src/background.js && node --check extension/src/controller.js && node --check extension/src/executor.js"
+  }
+}

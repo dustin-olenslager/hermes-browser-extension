@@ -1,0 +1,250 @@
+# Starter CI workflow — the ONE plane that binds every agent, in any tool.
+#
+# .agents/policy.md only fences the agent that reads it. This workflow is what actually blocks a bad merge
+# from any agent — because it runs on the server, not on anyone's machine, and a required status check
+# cannot be skipped with `--no-verify`.
+#
+# TO MAKE IT REAL (two steps, both done by a human once):
+#   1. Copy this file to .github/workflows/verify.yml and replace each <CMD> with the command from
+#      the architecture-boundary check (the same ones your pre-commit gate runs).
+#   2. In repo Settings → Branches, add a branch-protection rule on the default branch that marks
+#      the "verify" check REQUIRED and forbids force-push / direct push. Until you do step 2, this
+#      workflow reports but does not block — see AGENTS.md → "Enforcement — the honest version".
+#
+# Not on GitHub? The same four gates belong in your CI of choice (GitLab CI, CircleCI, Buildkite…);
+# the point is server-side + required, not the vendor.
+
+name: verify
+on:
+  pull_request:
+  push:
+    branches: [main]   # <- your default branch
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history, so the docs gate can diff against the PR base
+
+      # --- Set up your toolchain here (node/python/go/…); delete the ones you do not use. ---
+      # - uses: actions/setup-node@v4
+      #   with: { node-version-file: '.nvmrc', cache: 'npm' }
+      # - run: <INSTALL_CMD>
+
+      # Agent-mirror drift — fails if any tool-native generated mirror or the AGENTS.md rules block is stale vs
+      # AGENTS.md + .agents/rules/*.md. This is what keeps every tool's inlined ruleset honest.
+      - name: Agent mirrors in sync
+        run: sh scripts/sync-agents.sh --check
+
+      # Docs landing gate — fails if any commit in this PR changed code but not the worklog.
+      # Uses the PR base SHA (not a hardcoded branch name) so it works on any default branch and
+      # on the first commit; the ref-guard in check-docs.sh fails loudly rather than silently passing.
+      - name: Docs in sync
+        run: sh scripts/check-docs.sh --since "${{ github.event.pull_request.base.sha }}"
+        if: github.event_name == 'pull_request'
+
+      # Conflict markers — the one corrupt state a generated file can be in that no other gate sees.
+      # `sync-agents.sh --check` validates only its own block, so a file can reach main carrying
+      # `<<<<<<< HEAD` and a doubled block with every other gate green. One pass over the tracked tree.
+      - name: No unresolved conflict markers
+        run: sh scripts/check-conflict-markers.sh
+
+      # Plan-home gate — fails if any plan/roadmap doc lives outside docs/agents/. Keeps one
+      # canonical plan per project (docs/agents/roadmap.md) so an agent picking the repo up can
+      # never read the wrong one. Adopting a repo with a backlog of strays? Fold them first, or
+      # set PLAN_HOME_OFF=1 here until you have.
+      - name: Plan home
+        run: sh scripts/check-plan-home.sh
+
+      # Spec gate — fails if a structural change has no spec behind it, or if the spec still carries an
+      # unresolved [NEEDS CLARIFICATION: …]. An ambiguity that reaches the plan has already become a
+      # guess nobody reviewed. Doctrine: .agents/rules/spec.md. Adopting a repo that predates the spec
+      # rung? Set SPEC_OFF=1 here TEMPORARILY and track the gap in docs/agents/in-progress.md.
+      # Rule-fork drift gate — if this repo has ADOPTED the kit AND another repo forks its rules,
+      # audit the fork for a silently-dropped policy rung. Set TARGET to the fork's checkout path.
+      # Delete this step if nothing forks these rules. Its canary runs in the gated self-tests job.
+      # - name: Rule-fork drift
+      #   run: TARGET=/path/to/fork sh scripts/check-rule-fork.sh
+
+      - name: Spec
+        run: sh scripts/check-spec.sh --since "${{ github.event.pull_request.base.sha }}"
+        if: github.event_name == 'pull_request'
+
+      # Spec coverage — every spec requirement must be claimed by a milestone in its plan.
+      - name: Spec coverage
+        run: sh scripts/check-coverage.sh --since "${{ github.event.pull_request.base.sha }}"
+        if: github.event_name == 'pull_request'
+
+      # Wireframe gate — a user-facing change needs a wireframe and its interviews before backend.
+      # Presence only: it cannot judge whether the screen is good, which stays a review question.
+      - name: Wireframe
+        run: sh scripts/check-wireframe.sh --since "${{ github.event.pull_request.base.sha }}"
+        if: github.event_name == 'pull_request'
+
+      # Milestone evidence — a plan-to-code reconciliation: a COMPLETED milestone must name
+      # resolvable evidence (a path that exists, or a PR that resolves). Grade only the
+      # milestone lines this change wrote, so touching an old plan is not blocked by debt
+      # that predates the rule.
+      - name: Milestone evidence
+        run: sh scripts/check-milestone-evidence.sh --since "${{ github.event.pull_request.base.sha }}"
+        if: github.event_name == 'pull_request'
+
+      - name: Typecheck
+        run: <TYPECHECK_CMD>          # the architecture-boundary check
+
+      - name: Lint
+        run: <LINT_CMD>
+
+      - name: Test
+        run: <TEST_CMD>
+
+      # Architecture-boundary check — fails on any import that points outward across a layer.
+      # Delete this step only if the repo has no boundary linter wired yet (MODULE:arch dropped).
+      - name: Architecture boundaries
+        run: <ARCH_CHECK_CMD>         # dependency-cruiser / import-linter / ArchUnit / …
+
+      # Agent-readiness gate — the mechanical floor for dual-mode apps (.agents/rules/agent-readiness.md).
+      # Checks the agent card exists + is served, mutations are idempotent, MCP schemas are generated
+      # not hand-written, no vendor LLM endpoint is hardcoded outside its adapter, and a scoped
+      # non-human principal exists. Delete this step if MODULE:agent was pruned.
+      # Mid-adoption? set AGENT_READINESS_ENFORCE: warn here TEMPORARILY and track the gap in
+      # docs/agents/in-progress.md — it reports without blocking, and leaving it on is a silent gate.
+      - name: Agent readiness
+        run: sh scripts/check-agent-readiness.sh --since "${{ github.event.pull_request.base.sha }}"
+        if: github.event_name == 'pull_request'
+
+      # Expert-review gate — fails if non-trivial PR lacks review evidence:
+      # plan.md exists, checklist.md has items, adr.md has new section, PR has ≥2 persona sign-offs.
+      # Trivial escape: PR label "trivial", commit prefix "trivial:", or 1-file ≤15-line no-schema change.
+      - name: Expert review
+        run: sh scripts/check-expert-review.sh --since "${{ github.event.pull_request.base.sha }}"
+        if: github.event_name == 'pull_request'
+
+      # Secret scan — a leaked credential fails the PR. ON by default, unlike the `<CMD>` steps
+      # above, because a secret scanner needs NO stack knowledge: it scans a diff for credential
+      # shapes, so it is the one supply-chain-adjacent gate that is genuinely stack-agnostic.
+      #
+      # A pinned, checksum-verified BINARY, not `gitleaks/gitleaks-action`. The action refuses
+      # organization repos on a free plan ("License key is required"), so it fails on the very repos
+      # this template targets; the binary has no such gate and is the same scanner. The SHA-256 is
+      # the vendor-published digest for this exact archive (gitleaks release v8.28.0), verified
+      # against the release's own `checksums.txt` — `sha256sum -c` refuses a tampered download.
+      # Bump GITLEAKS_VERSION and GITLEAKS_SHA256 together from the release's checksums.txt.
+      - name: Secret scan
+        env:
+          GITLEAKS_VERSION: "8.28.0"
+          GITLEAKS_SHA256: "a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb"
+        run: |
+          set -euo pipefail
+          asset="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$asset" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${asset}"
+          echo "${GITLEAKS_SHA256}  ${asset}" | sha256sum -c -
+          tar -xzf "$asset" gitleaks
+          # Scan only the commits this PR introduces (base..HEAD); a whole-history scan on every PR
+          # is slow and reports debt that predates the change.
+          ./gitleaks detect --no-banner --redact --exit-code 1 \
+            --log-opts="--no-merges ${{ github.event.pull_request.base.sha }}..HEAD"
+        if: github.event_name == 'pull_request'
+
+  # Gate self-tests live in their OWN job, gated on the kit's own tooling changing — they are not
+  # part of the required `verify` check. Panoply ships gates this repo depends on, so a gate that
+  # silently stops detecting anything is a defect worth catching; but re-proving the kit's canaries
+  # on every unrelated product PR buys no signal (a docs-only PR cannot tell anyone whether the spec
+  # gate still detects) and 4 of the 11 steps of this workflow were exactly that. They run whenever
+  # scripts/, the rule modules, or the workflows change, and on every push to the default branch, so
+  # drift cannot hide behind the filter. Delete this job if you do not want the kit's gates
+  # self-tested in your CI at all.
+  self-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history, so the change detection can diff against the PR base
+
+      # Decide whether the gates themselves changed. A step (not a job-level `if:`) because GitHub has
+      # no native "paths changed since the PR base" condition; this is the smallest correct mechanism.
+      - name: Detect gate/tooling changes
+        id: gate-changes
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD \
+               | grep -qE '^(scripts/|\.agents/rules/|\.github/workflows/)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "no gate/tooling change in this PR — skipping the kit's gate self-tests"
+          fi
+
+      # Proves the shipped spec gate still refuses a missing spec and an unresolved marker, passes a
+      # compliant one, honors the docs-only exemption, and can be lifted by SPEC_OFF.
+      - name: Spec gate self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/check-spec.test.sh
+
+      # The coverage rivet's canary — proves it still refuses an uncovered requirement, both ways.
+      - name: Coverage gate self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/check-coverage.test.sh
+
+      # The phase detector's canary — proves it still refuses a non-repo and still finds the
+      # phase each fixture is in. Detection precedes every later rung, so it is proven in CI.
+      - name: Factory phase detector self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/factory-detect.test.sh
+
+      # The wireframe gate's canary — proves it still refuses a user-facing change with no
+      # wireframe, and still accepts a reasoned n/a.
+      - name: Wireframe gate self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/check-wireframe.test.sh
+
+      # The milestone gate's canary — proves it still refuses a completed milestone with no
+      # resolvable evidence, and still leaves an open milestone alone.
+      - name: Milestone evidence gate self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/check-milestone-evidence.test.sh
+
+      # The context-budget canary — proves a generated mirror is an INDEX and not the inlined rule
+      # corpus, that every rule module is named in it, and that conditional rules are not
+      # force-loaded. These all regressed silently before anything measured them.
+      - name: Doc-map / context-budget self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/doc-map.test.sh
+
+      # Proves the plan-home gate still refuses a stray plan doc outside the doc spine and passes one
+      # in the spine. Drop this step if you pruned the plan-home gate.
+      - name: Rule-fork drift self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/check-rule-fork.test.sh
+
+      - name: Plan-home gate self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/check-plan-home.test.sh
+
+      # Proves the conflict-marker gate fails a marker, passes a clean tree, and refuses a failed
+      # search. Case 6 also pins the blind spot: sync-agents --check passing on the file this rejects.
+      - name: Conflict-marker gate self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/check-conflict-markers.test.sh
+
+      # Both gates block every PR, so both canaries must run somewhere — otherwise the widest-blast-radius
+      # gates in the kit are the two with no way to prove they still detect.
+      - name: Docs gate self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/check-docs.test.sh
+
+      - name: Expert-review gate self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/check-expert-review.test.sh
+
+      # Proves the algorithm gate still refuses a structural change with no deletion section.
+      # Drop this step if you pruned the Algorithm rule.
+      - name: Algorithm gate self-test
+        if: steps.gate-changes.outputs.run == 'true'
+        run: sh scripts/check-algorithm.test.sh

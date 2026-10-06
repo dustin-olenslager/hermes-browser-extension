@@ -1,0 +1,143 @@
+:root {
+  color-scheme: light dark;
+  --fg: #14161a;
+  --muted: #5d6470;
+  --border: #d6dae1;
+  --card: #ffffff;
+  --accent: #3b5bdb;
+  --ok: #1f7a45;
+  --warn: #9a6a00;
+  --bad: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e8eaee;
+    --muted: #9aa3b2;
+    --border: #333a45;
+    --card: #1b1f26;
+    --accent: #7a93ff;
+    --ok: #4ec27f;
+    --warn: #e0b24a;
+    --bad: #ff7a70;
+  }
+}
+
+body {
+  width: 340px;
+  margin: 0;
+  padding: 14px 14px 12px;
+  background: var(--card);
+  color: var(--fg);
+  font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+h1 {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.status {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.status--connected { color: var(--ok); }
+.status--connecting,
+.status--reconnecting { color: var(--warn); }
+.status--fatal { color: var(--bad); }
+
+form {
+  display: grid;
+  gap: 9px;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fg);
+  font: 13px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.optional {
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.7;
+}
+
+input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+button {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fg);
+  font: 600 12px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+button.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.detail {
+  margin: 10px 0 0;
+  min-height: 1em;
+  font-size: 11px;
+  color: var(--muted);
+  word-break: break-word;
+}
+
+.detail--bad { color: var(--bad); }
+
+details {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+details p {
+  margin: 8px 0 0;
+}

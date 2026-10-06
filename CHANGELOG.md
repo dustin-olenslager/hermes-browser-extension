@@ -1,0 +1,99 @@
+# Changelog — Hermes Browser Control
+
+The running change log for this repo. One entry per change, newest first, under `[Unreleased]` until
+it ships. Code and its log line ride in the same commit (`scripts/check-docs.sh` enforces it).
+
+## [Unreleased]
+
+- FIX — **the origin policy FR-006/FR-007 described was not implemented, though the plan marked it
+  done.** `plan.md` ticked M2 as satisfying "restrict the origins it will act on" and "refuse
+  browser-internal pages"; grepping `extension/src/` found no allowlist and no scheme refusal anywhere,
+  so the claim was false and the boundary the README advertised did not exist. The policy is now
+  `extension/src/shared/origins.js` — a pure module with its own 14 tests — consulted by the planner
+  before any protocol call is issued, with `allowedOrigins` threaded from the popup through the
+  background config to the executor. Two things came out of writing it down properly: `browser_navigate`
+  had to be checked on its **destination** (checking the tab's current URL would have gated the page
+  being left and waved through a navigation to anywhere — the gap that would have made the allowlist
+  decorative), and `file:` had to be refused outright rather than offered as a switch, because a `file:`
+  URL has no origin (`new URL("file:///x").origin` is the string `"null"`) so an origin list can never
+  express it. An empty allowlist means the default `http`/`https` schemes, deliberately not "allow
+  nothing": an inert extension reads as broken, and a broken-looking control gets turned off. Also
+  fixed: `normalizeOrigin` returned `""` for a bare host (`example.com`) — the form an operator actually
+  types — so the entry he believed he wrote silently became nothing.
+
+- FIX — **disconnecting left the debugger attached to the operator's tab.** `ChromeExecutor.detachAll()`
+  was defined and never called, so closing the socket returned the popup to "Not connected" while Chrome
+  kept its "…is being debugged" banner on the tab and the attachment stayed held. "Disconnect" now means
+  what it says: `background.js` releases the debugger on disconnect, not only on worker teardown. Found
+  by driving the real executor against a recording fake `chrome.*` (`tools/verify-policy.mjs`) and
+  asserting what did and did not reach the browser — the unit tests could not see it, because the
+  attachment is deliberately held across actions so Chrome's banner does not flash on every call.
+
+- FEAT — **`tools/verify-policy.mjs`: the layer between the unit tests and the live run.** The unit
+  suite proves the planner and the policy in isolation; the live gateway run proves routing. Neither
+  answers "did the refusal stop the browser call, or fail after trying?" — so this drives the real
+  `ChromeExecutor` against a recording fake `chrome.*` and asserts the negative: an out-of-policy tab
+  and a browser-internal page issue **zero** `chrome.debugger` calls, an in-policy tab does issue them,
+  and a navigation off the allowlist never reaches `Page.navigate`. Run with `npm run verify:policy`;
+  kept out of `npm test` so the suite stays runnable with no browser.
+
+- FIX — **the manifest asked for `<all_urls>` host permissions it does not need.** `chrome.debugger`
+  requires only the `debugger` permission, and nothing here uses `chrome.scripting`, so
+  `host_permissions: ["http://*/*", "https://*/*"]` bought nothing while widening the install warning
+  and contradicting US-2 ("no `<all_urls>` host permission is present"). Now `host_permissions: []`.
+
+- FEAT — **the extension controller: a Hermes agent can drive the Chrome the operator is already
+  signed into.** The client end of Hermes' existing browser-control lane — register over the
+  authenticated route, upgrade the socket on a single-use ticket, answer `browser.controller.command`
+  frames, and return results — implemented as an MV3 extension with no build step and no dependencies.
+  Declared capabilities are the nine named actions (navigate, click, type, press, scroll, snapshot,
+  screenshot, tabs, back); raw script and raw protocol commands are **absent from the declared set**
+  (ADR-0002), so the boundary can be verified by reading the manifest rather than trusted. A snapshot
+  returns the page's interactive elements as `@eN` references the agent acts on, matching the reference
+  form Hermes' built-in tools already send. The popup is two fields, four states, and one button — the
+  fatal state is deliberately distinct from the retrying one, because a rejected key that keeps
+  retrying is indistinguishable from a working socket. `tools/pair.mjs` exercises the channel from the
+  command line. 93 unit tests, green with no browser installed; verified end to end against the live
+  gateway (the controller received a routed `browser_snapshot` and the agent's reply carried the
+  controller's marker — SC-001).
+
+- FEAT — **`tools/check-arch-boundary.mjs`: the dependency-direction gate, with its blind spot
+  stated.** The pure layer (`extension/src/shared/**`, `extension/src/controller.js`) must stay
+  importable with no browser: no `chrome.*`, no DOM, no global `fetch`/`WebSocket`. The first version
+  of this gate was a shell `grep` and was **unusable** — it flagged comments mentioning `chrome.`,
+  wire-format strings, and the page-source payloads the extension *injects* (`COLLECT_FN` is a template
+  literal full of `document.querySelectorAll` that runs in the PAGE, so it is data, not a violation). A
+  gate that reports correct code as broken gets ignored, which is worse than no gate. Rewritten in Node
+  with comments and string/template literals blanked (line numbers preserved), and it carries a
+  mutation-tested canary (`tests/arch-boundary.test.mjs`) that proves it catches a real violation and
+  still ignores the legitimate payloads. Its one remaining limitation — an interpolation inside a
+  template literal is stripped along with it — is written into the tool's own header rather than
+  hidden.
+
+- FIX — **a real bug the unit suite could not see, found by the live run.** The production composition
+  root injected the socket as an arrow-function factory while `ControllerClient` instantiates it with
+  `new`; an arrow function is not constructible, so the first real run died with `TypeError: … is not a
+  constructor`. Every unit test passed, because the *fake* socket was a factory too — a fake more
+  permissive than the real dependency certifies nothing about construction. Production now passes the
+  constructor itself and the fake was corrected to match. The same live run also surfaced a real
+  executor defect: a `tabs` action that activated a different tab left the rest of the plan acting on
+  the old tab; the executor now re-resolves the active tab after an activation step, and the executor
+  tests assert *which tab* each protocol call was addressed to so this cannot regress silently.
+
+- DOCS — **the repo's own governance.** The kit's own governance docs (its roadmap rows, its
+  `governance/` plan archive, its `AUDIT-promises.md`, and the `panoply` skill that belongs to the kit
+  repo) are removed from this adopter, and the plan spine is written for this project: a spec and plan
+  under `docs/agents/browser-control/` with the four simulated persona interviews and a wireframe for
+  the popup, a roadmap with one live initiative and the parked ones recorded with their revisit
+  triggers, three ADRs (implement the existing lane; capabilities only with raw script opt-in; one
+  extension per browser, unpacked), and `key-patterns.md` carrying the gotchas that cost real time —
+  a permissive fake, a gate that fires on correct code, tab retargeting, and a retry loop that looks
+  like a working connection. `AGENTS.md`'s placeholders are filled with this repo's real modules and
+  commands, and the layer map in `.agents/rules/clean-architecture.md` names this repo's actual
+  directories.
+
+- CHORE — **CI wired to this repo's real commands.** `.github/workflows/verify.yml` runs the kit's
+  gates plus this repo's own: `node --check` on each entry point, `node --test 'tests/*.test.mjs'`, and
+  `node tools/check-arch-boundary.mjs` with its canary. The architecture-boundary step is the one that
+  matters most here — it is what keeps the pure layer importable with no browser, which is what makes
+  the suite runnable in CI at all.

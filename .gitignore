@@ -1,0 +1,19 @@
+# Personal, machine-local overrides — never publish these
+.agents/settings.local.json
+.agents/local/
+AGENTS.local.md
+
+# Generated tool-native mirrors — canonical source is .agents/ + AGENTS.md.
+# Run `sh scripts/sync-agents.sh` to produce the mirrors for the tools you use.
+.claude/
+CLAUDE.md
+.cursor/
+.windsurf/
+.clinerules/
+.github/copilot-instructions.md
+GEMINI.md
+CONVENTIONS.md
+*.mdc
+
+# Staging dir for the existing-repo degit + /adapt-agents-setup flow
+.agents-kit-tmp/
