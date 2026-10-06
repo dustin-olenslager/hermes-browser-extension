@@ -40,7 +40,7 @@ _kit_root() { cd "$(dirname "$0")/.." && pwd; }
 
 # A canonical kit clone, used when this script has been COPIED into an adopted repo.
 _canonical_kit_root() {
-  for _c in "${PANOPLY_KIT_ROOT:-}" "${HOME:-}/.panoply" "${HOME:-}/.cache/panoply" "${HOME:-}/panoply" "<kit>"; do
+  for _c in "${PANOPLY_KIT_ROOT:-}" "${HOME:-}/.panoply" "${HOME:-}/.cache/panoply" "${HOME:-}/panoply"; do
     [ -n "$_c" ] || continue
     if [ -f "$_c/scripts/panoply.sh" ]; then printf '%s' "$_c"; return 0; fi
   done

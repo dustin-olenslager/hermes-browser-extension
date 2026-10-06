@@ -2,7 +2,8 @@
 
 - **Area:** `browser-control`  ·  **Started:** 2026-10-06  ·  **Status:** In progress
 - **Owner:** the owner
-- **Next step:** M1–M4 are done and verified end to end against the live gateway (see Build notes).
+- **Next step:** M1–M5 are done. The extension is verified end to end against the live gateway
+  (see Build notes); what remains is loading it unpacked into a browser and pairing it.
   M5 (repo governance + CI gates) is the remaining milestone; it is the batch currently in flight.
 - **Roadmap initiative:** `../../roadmap.md` → "Drive the signed-in browser".
 - **Spec:** `spec.md` in this folder — resolved, no markers left.
@@ -159,11 +160,13 @@ extension per browser, loaded unpacked).
   (the authenticated path), FR-012.
   Evidence: `tests/controller.test.mjs`, `tools/check-arch-boundary.mjs`, and the recorded run in
   Build notes.
-- [ ] **M5 — repo governance and gates** — this repo's own docs (roadmap, in-progress, architecture,
-  key-patterns, infrastructure, completed-features, CHANGELOG, README), the kit's placeholders filled,
-  and the CI workflow wired to this repo's real commands including the architecture gate and its
-  mutation-tested canary. Satisfies no FR — it is the repo's own readiness, which is why it is last.
-  Evidence: `.github/workflows/verify.yml`, `README.md`.
+- [x] **M5 — repo governance and gates** — `.github/workflows/verify.yml`
+  This repo's own docs (roadmap, in-progress, architecture, key-patterns, infrastructure,
+  completed-features, CHANGELOG, README), the kit's placeholders filled, and the CI workflow wired to
+  this repo's real commands including the architecture gate and its mutation-tested canary. Satisfies
+  no FR — it is the repo's own readiness, which is why it is last.
+  Evidence: `.github/workflows/verify.yml`, `README.md`, `docs/agents/architecture.md`,
+  `tools/check-arch-boundary.mjs`.
 
 ## Open questions
 

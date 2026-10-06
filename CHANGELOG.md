@@ -5,6 +5,24 @@ it ships. Code and its log line ride in the same commit (`scripts/check-docs.sh`
 
 ## [Unreleased]
 
+- CHORE — **de-identified for publication.** The repo is published under a personal account, so the
+  identifiers of the operator's own estate were replaced with neutral ones rather than shipped: the
+  real gateway hostname in three `normalizeServerUrl`/`wsUrl` test cases became `hermes.example.com`;
+  a real session id that had been used as a fixture and as the popup's placeholder became an obviously
+  synthetic one; a machine-named browser-profile fixture became `chrome-workstation-linux`; and the
+  doctor's hard-coded absolute kit path was dropped from its search list, leaving the standard
+  locations plus `$PANOPLY_KIT_ROOT`. Verified: the doctor still exits 0 — it reports that no kit
+  source is reachable and checks against its own generation rather than failing — and `PANOPLY_KIT_ROOT`
+  still cross-verifies against a real clone. Nothing functional changed.
+
+- FIX — **CI was red on shellcheck, on lines this work added.** Two findings, both in the kit's
+  canary scripts as adopted here: `out="$( cd X && cmd || true )"` (SC2015 — `A && B || C` is not
+  if-then-else, so the `|| true` branch ran when the command legitimately failed) and a fixture
+  `printf` whose markdown backticks shellcheck wanted expanded (SC2016). Both fixed: the capture is now
+  `out="$( cd X || exit 1; cmd 2>&1 )" || true`, and the fixtures carry the same
+  `# shellcheck disable=SC2016` marker the rest of the file already uses. Verified with shellcheck
+  0.11.0 (0 findings) and by re-running all three canaries (13/15/12 passed).
+
 - FIX — **the origin policy FR-006/FR-007 described was not implemented, though the plan marked it
   done.** `plan.md` ticked M2 as satisfying "restrict the origins it will act on" and "refuse
   browser-internal pages"; grepping `extension/src/` found no allowlist and no scheme refusal anywhere,

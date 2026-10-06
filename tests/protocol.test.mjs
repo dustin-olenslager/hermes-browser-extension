@@ -56,7 +56,7 @@ test("registrationPayload carries the exact server-required fields", () => {
   const payload = registrationPayload({
     sessionId: " 20260101_000000_abcdef ",
     controllerId: "chrome-ext-1",
-    browserProfileId: "chrome-the desktop host-linux",
+    browserProfileId: "chrome-workstation-linux",
   });
   assert.deepEqual(Object.keys(payload).sort(), [
     "browser_profile_id",
@@ -67,7 +67,7 @@ test("registrationPayload carries the exact server-required fields", () => {
   ]);
   assert.equal(payload.protocol_version, 1);
   assert.equal(payload.session_id, "20260101_000000_abcdef");
-  assert.equal(payload.browser_profile_id, "chrome-the desktop host-linux");
+  assert.equal(payload.browser_profile_id, "chrome-workstation-linux");
   assert.deepEqual(payload.capabilities, [...CAPABILITIES]);
 });
 
