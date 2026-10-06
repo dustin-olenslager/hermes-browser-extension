@@ -207,6 +207,7 @@ r="$(mkrepo pass-own-doctrine)"
 base="$(git -C "$r" rev-parse HEAD)"
 mkdir -p "$r/.agents/rules" "$r/docs/agents/core/thing" "$r/src"
 printf '# Spec convention\n\nEvery user story names the screen or page it serves.\n' > "$r/.agents/rules/spec.md"
+# shellcheck disable=SC2016  # markdown backticks inside the fixture text must stay literal
 printf '# Spec\n\n- **FR-001**: a migration runner.\n- **Wireframe:** `n/a — no user-facing surface` (a CLI)\n' > "$r/docs/agents/core/thing/spec.md"
 printf 'x\n' > "$r/src/x.ts"
 cmit "$r" "governance + code"
@@ -219,6 +220,7 @@ else bad "the gate demanded a wireframe for its own doctrine (got '$rc')"; fi
 # it — observed as "2 plan(s), 8 completed milestone(s)" for one plan with four milestones.
 r="$(mkrepo pass-no-double-count)"
 mkdir -p "$r/docs/agents/core/thing"
+# shellcheck disable=SC2016  # markdown backticks inside the fixture text must stay literal
 printf '# Plan\n\n- [x] M1 — a thing — `src/x.ts`\n' > "$r/docs/agents/core/thing/plan.md"
 mkdir -p "$r/src"; printf 'x\n' > "$r/src/x.ts"
 git -C "$r" add -A

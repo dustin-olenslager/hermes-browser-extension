@@ -208,7 +208,9 @@ mkdir -p "$r/docs/agents/core/thing"
 # shellcheck disable=SC2016  # markdown backticks inside the fixture text
 printf '# Plan\n\n## Milestones\n- [x] ship it — nothing behind it\n' > "$r/docs/agents/core/thing/plan.md"
 git -C "$r" add -A
-out="$( cd "$r" && sh scripts/check-launch.sh --staged 2>&1 || true )"
+# Deliberately not `cd X && cmd || true`: that shape runs the `|| true` branch when the `cd`
+# succeeds and the command legitimately fails, which is not what "capture output either way" means.
+out="$( cd "$r" || exit 1; sh scripts/check-launch.sh --staged 2>&1 )" || true
 n="$(printf '%s' "$out" | grep -c 'marks a ship milestone complete' || true)"
 if [ "$n" -eq 1 ]; then
   ok "--staged reports a touched plan once, not twice"
