@@ -5,6 +5,14 @@ it ships. Code and its log line ride in the same commit (`scripts/check-docs.sh`
 
 ## [Unreleased]
 
+- DOCS — **the README rewritten, and an MIT LICENSE added.** The old one opened with a diagram and
+  reached the actual constraint — which pages the controller refuses to touch — two sections down. It
+  now leads with what the extension is for, states the refusal boundary before the install steps,
+  documents the four popup states (including why the fatal one must not look like the retrying one),
+  and replaces a vague "testing it against a live gateway" note with a table naming what each
+  verification layer proves and what the layer below it cannot. The repo had no LICENSE at all, which
+  for a public repo means nobody may legally reuse it; it is now MIT.
+
 - CHORE — **de-identified for publication.** The repo is published under a personal account, so the
   identifiers of the operator's own estate were replaced with neutral ones rather than shipped: the
   real gateway hostname in three `normalizeServerUrl`/`wsUrl` test cases became `hermes.example.com`;
