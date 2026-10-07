@@ -54,8 +54,11 @@ list cannot express it, and a switch that cannot work is worse than no switch. D
 would also be a filesystem read primitive against your machine, which is a different and much larger
 thing than acting on a web page.
 
-`host_permissions` is **empty**: `chrome.debugger` needs only the `debugger` permission, and nothing
-here uses `chrome.scripting`, so the extension does not ask for access to every site.
+`host_permissions` covers `http://*/*` and `https://*/*`, and it is **required** — not decorative.
+An MV3 extension's `fetch` is subject to CORS, so without a matching host permission the service
+worker cannot reach the gateway at all: registration fails with a bare `Failed to fetch` and no
+other diagnostic. It does **not** grant page access here, because nothing uses `chrome.scripting`;
+page work goes through `chrome.debugger`, which is the `debugger` permission's job.
 
 ### Narrowing it further (optional)
 

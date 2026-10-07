@@ -67,10 +67,13 @@ it ships. Code and its log line ride in the same commit (`scripts/check-docs.sh`
   `origins.js` module, and `npm run verify:policy`, so the advertised boundary and the implemented one
   are the same thing.
 
-- FIX — **the manifest asked for `<all_urls>` host permissions it does not need.** `chrome.debugger`
-  requires only the `debugger` permission, and nothing here uses `chrome.scripting`, so
-  `host_permissions: ["http://*/*", "https://*/*"]` bought nothing while widening the install warning
-  and contradicting US-2 ("no `<all_urls>` host permission is present"). Now `host_permissions: []`.
+- FIX — **host permissions are required after all, and removing them broke the extension.**
+  `host_permissions` was dropped to `[]` on the reasoning that `chrome.debugger` needs only the
+  `debugger` permission. That reasoning is wrong for the *network* half: an MV3 extension's `fetch`
+  is CORS-restricted, so with no matching host permission the service worker cannot reach the
+  gateway — registration fails with `Failed to fetch` and nothing else. Restored to
+  `["http://*/*", "https://*/*"]`. The `<all_urls>` install warning is the honest cost of the
+  extension being able to talk to whatever gateway the operator points it at.
 
 - FEAT — **the extension controller: a Hermes agent can drive the Chrome the operator is already
   signed into.** The client end of Hermes' existing browser-control lane — register over the

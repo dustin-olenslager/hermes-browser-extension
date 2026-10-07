@@ -25,5 +25,5 @@
     "128": "icons/icon128.png"
   },
   "permissions": ["debugger", "tabs", "storage", "alarms"],
-  "host_permissions": []
+  "host_permissions": ["http://*/*", "https://*/*"]
 }
