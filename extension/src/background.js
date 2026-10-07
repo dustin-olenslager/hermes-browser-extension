@@ -104,10 +104,42 @@ async function init() {
     if (config.enabled) await client.start().catch(() => {});
     return true;
   })();
+  // Do NOT cache a rejection: a failed first start() would otherwise poison `ready` forever, so
+  // every later keepalive alarm would resolve to the same rejected promise and the extension could
+  // never recover without a manual reload.
+  ready.catch(() => {
+    ready = null;
+  });
   return ready;
 }
 
+/**
+ * Reconnect if the channel is not genuinely live.
+ *
+ * `client.state` is NOT a reliable liveness signal: an MV3 worker suspension kills the socket
+ * without firing onclose, leaving state CONNECTED with a dead socket. Ask the socket itself.
+ * ControllerClient.start() performs the same liveness check, so calling it unconditionally is safe.
+ */
+async function ensureConnected() {
+  await init();
+  if (!config.enabled) return;
+  const live = client.socket && client.socket.readyState === 1;
+  if (live) return;
+  client.setState(STATE.RECONNECTING, { error: "reconnecting after worker suspension" });
+  await client.start().catch(() => {});
+}
+
 // ---- lifecycle -----------------------------------------------------------
+
+// Bootstrap at MODULE SCOPE, not only in onInstalled.
+//
+// Chrome fires onInstalled only for a real install. An unpacked extension loaded through the
+// DevTools Protocol (Extensions.loadUnpacked) never gets that event, so an install-only bootstrap
+// leaves it permanently idle: no keepalive alarm is ever created and the worker is suspended
+// ~30s later with nothing to wake it. Creating the alarm here (idempotent — the same name
+// replaces the previous one) makes the extension self-healing however it was loaded.
+chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: 1 });
+init().catch(() => {});
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: 1 });
@@ -121,10 +153,7 @@ chrome.runtime.onStartup.addListener(() => {
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== KEEPALIVE_ALARM) return;
-  await init();
-  if (!config.enabled) return;
-  if (client.state === STATE.CONNECTED || client.state === STATE.CONNECTING) return;
-  await client.start().catch(() => {});
+  await ensureConnected();
 });
 
 // The page's own dialog/reload can drop the debugger; forget the tab so the next

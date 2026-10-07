@@ -112,7 +112,12 @@ export class ControllerClient {
   /** Start (or restart) the connection loop. Idempotent while connecting. */
   async start() {
     this.stopped = false;
-    if (this.state === STATE.CONNECTED) return { ok: true, already: true };
+    // "CONNECTED" is not proof of a live channel: an MV3 service worker is suspended after ~30s
+    // idle, which destroys the WebSocket without firing onclose. The state then still reads
+    // CONNECTED while `this.socket` is dead, and returning early here would strand the extension
+    // permanently — reporting "connected" with no socket. Only skip when a socket is genuinely open.
+    const live = this.socket && this.socket.readyState === 1;
+    if (this.state === STATE.CONNECTED && live) return { ok: true, already: true };
     if (this.connectPromise) return this.connectPromise;
     this.connectPromise = this._connectOnce().finally(() => {
       this.connectPromise = null;
